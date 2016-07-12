@@ -78,7 +78,7 @@ class Javbus():
 			item['img'] = img
 			item['magnet'] = magnet
 
-			write_text = '标题：%s\n番号：%s\n发行时间：%s\nJav链接：%s\n磁力链接：%s\n\n' %(item['title'], item['fh'], item['time'], item['link'], item['magnet'])
+			write_text = '标题：%s\n番号：%s\n发行时间：%s\n图片：%s\nJav链接：%s\n磁力链接：%s\n\n' %(item['title'], item['fh'], item['time'], item['img'], item['link'], item['magnet'])
 			f = open('av.txt', 'a')
 			f.write(write_text)
 			f.close()
