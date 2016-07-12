@@ -2,7 +2,7 @@
 
 import requests, re, math, random
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+from progress.bar import ShadyBar
 
 class Javbus():
 	def __init__(self):
@@ -24,20 +24,20 @@ class Javbus():
 
 	def get_full_page(self):
 		full_page = ''
-		pbar = tqdm(range(self.total_page))
-		for index in pbar:
-			pbar.set_description('正在解析第%s页' %str(index+1))
+		bar = ShadyBar('解析数据', max=self.total_page, suffix='%(percent)d%% [%(index)d/%(max)d]')
+		for index in range(self.total_page):
 			text = self.get_html(index+1)
 			full_page += text
+			bar.next()
+		bar.finish()
 		return full_page
 
 	def get_all_fh(self):
 		full_page = self.get_full_page()
 		soup = BeautifulSoup(full_page, 'html.parser')
 		divs = soup.find_all(class_='item')
-		pbar = tqdm(divs)
-		for item in pbar:
-			pbar.set_description('正在获取全站番号信息')
+		bar = ('获取全站番号信息', max=len(div), suffix='%(percent)d%% [%(index)d/%(max)d]')
+		for item in divs:
 			av = item.find(class_='photo-info')
 			# 需要的数据
 			title = item.find(class_='photo-frame').img['title']
@@ -51,12 +51,13 @@ class Javbus():
 				'link': link
 			}
 			self.avs_info.append(info)
+			bar.next()
+		bar.finish()
 		return self.avs_info
 
 	def get_magnet(self):
-		pbar = tqdm(self.avs_info)
-		for item in pbar:
-			pbar.set_description('正在获取磁力链接')
+		bar = ShadyBar('获取磁力链接', max=len(self.avs_info), suffix='%(percent)d%% [%(index)d/%(max)d]')
+		for item in self.avs_info:
 			url = item['link']
 			html = self.s.get(url, headers=self.header).text
 			# 由于磁力链接是ajax方式获取，所以获取数据，构成ajax链接
@@ -72,7 +73,7 @@ class Javbus():
 			try:
 				magnet = soup.find('td').a['href']
 			except Exception:
-				magnet = 'error'
+				magnet = 'unissued'
 			# append
 			item['img'] = img
 			item['magnet'] = magnet
@@ -82,6 +83,8 @@ class Javbus():
 			f.write(write_text)
 			f.close()
 			self.final_data.append(item)
+			bar.next()
+		bar.finish()
 
 if __name__ == '__main__':
 	javbus = Javbus()
