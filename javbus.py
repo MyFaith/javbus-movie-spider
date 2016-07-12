@@ -5,8 +5,10 @@ from bs4 import BeautifulSoup
 from progress.bar import ShadyBar
 
 class Javbus():
-	def __init__(self):
+	def __init__(self, filepath='av.txt', timeout=5000):
 		self.url = 'https://www.javbus.in/page/{page}'
+		self.filepath = filepath
+		self.timeout = timeout
 		self.total_page = 93
 		self.avs_info = []
 		self.final_data = []
@@ -19,7 +21,7 @@ class Javbus():
 
 	def get_html(self, page):
 		url = self.url.replace('{page}', str(page))
-		req = self.s.get(url, headers=self.header)
+		req = self.s.get(url, headers=self.header, timeout=self.timeout)
 		return req.text
 
 	def get_full_page(self):
@@ -59,7 +61,7 @@ class Javbus():
 		bar = ShadyBar('获取磁力链接', max=len(self.avs_info), suffix='%(percent)d%% [%(index)d/%(max)d]')
 		for item in self.avs_info:
 			url = item['link']
-			html = self.s.get(url, headers=self.header).text
+			html = self.s.get(url, headers=self.header, timeout=self.timeout).text
 			# 由于磁力链接是ajax方式获取，所以获取数据，构成ajax链接
 			gid = re.search(r'var gid = (\d*?);', html).group(1)
 			lang = 'zh'
@@ -68,7 +70,7 @@ class Javbus():
 			floor = math.floor(random.random() * 1e3 + 1)
 			# 请求数据
 			ajax_url = 'https://www.javbus.in/ajax/uncledatoolsbyajax.php?gid=%s&lang=%s&img=%s&uc=%s&floor=%s' %(gid, lang, img, uc, floor)
-			ajax_result = self.s.get(ajax_url, headers=self.header)
+			ajax_result = self.s.get(ajax_url, headers=self.header, timeout=self.timeout)
 			soup = BeautifulSoup(ajax_result.text, 'html.parser')
 			try:
 				magnet = soup.find('td').a['href']
@@ -79,7 +81,7 @@ class Javbus():
 			item['magnet'] = magnet
 
 			write_text = '标题：%s\n番号：%s\n发行时间：%s\n图片：%s\nJav链接：%s\n磁力链接：%s\n\n' %(item['title'], item['fh'], item['time'], item['img'], item['link'], item['magnet'])
-			f = open('av.txt', 'a')
+			f = open(self.filepath, 'a')
 			f.write(write_text)
 			f.close()
 			self.final_data.append(item)
