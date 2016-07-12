@@ -36,7 +36,7 @@ class Javbus():
 		full_page = self.get_full_page()
 		soup = BeautifulSoup(full_page, 'html.parser')
 		divs = soup.find_all(class_='item')
-		bar = ('获取全站番号信息', max=len(div), suffix='%(percent)d%% [%(index)d/%(max)d]')
+		bar = ('获取全站番号信息', max=len(divs), suffix='%(percent)d%% [%(index)d/%(max)d]')
 		for item in divs:
 			av = item.find(class_='photo-info')
 			# 需要的数据
