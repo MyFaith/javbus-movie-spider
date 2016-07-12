@@ -7,7 +7,7 @@ from progress.bar import ShadyBar
 class Javbus():
 	def __init__(self):
 		self.url = 'https://www.javbus.in/page/{page}'
-		self.total_page = 1
+		self.total_page = 93
 		self.avs_info = []
 		self.final_data = []
 		self.s = requests.Session()
