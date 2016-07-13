@@ -3,7 +3,7 @@
 ### 依赖库
 - requests
 - BeautifulSoup4
-- progrss
+- progress
 - re
 - math
 - random
