@@ -7,6 +7,7 @@
 - re
 - math
 - random
+- pymongo
 
 ### 使用方法
 1.确保安装Python3
