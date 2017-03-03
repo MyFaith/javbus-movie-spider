@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from pymongo import MongoClient
 import threading
 import queue
+import argparse
 
 mongo = MongoClient(host='192.168.199.217')
 db = mongo.javbus
@@ -70,7 +71,7 @@ class Javbus(threading.Thread):
             # append
             item['img'] = img
             item['magnet'] = magnet
-            print('[取到数据]标题：%s 番号：%s 时间：%s 图片：%s 链接：%s 磁链：%s' %(item['title'], item['fh'], item['time'], item['img'], item['link'], item['magnet']))
+            print('[取到数据]\n标题：%s\n番号：%s\n时间：%s\n图片：%s\n链接：%s\n磁链：%s\n' %(item['title'], item['fh'], item['time'], item['img'], item['link'], item['magnet']))
             self.avs_queue.put(item)
         # 存储数据
         mutex.acquire()
@@ -87,25 +88,31 @@ class Javbus(threading.Thread):
             })
         mutex.release()
 
-def main():
+def main(max_page, thread_num):
     # 构建页面队列
     page_queue = queue.Queue()
-    for page in range(1, 5):
+    for page in range(1, max_page):
         page_queue.put(page)
     
     threads = []
     # 开启4个线程
-    for i in range(4):
+    for i in range(thread_num):
         javbus = Javbus(page_queue)
         javbus.setDaemon(True)
         javbus.start()
         threads.append(javbus)
     # 判断
-    while True:
-        for i in threads:
-            if not i.isAlive():
-                break
-        time.sleep(1)
+    # while True:
+    #     for i in threads:
+    #         if not i.isAlive():
+    #             break
+    #     time.sleep(1)
+    for i in threads:
+        i.join()
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser('javbus')
+    parser.add_argument('-page', dest='page', default=5, type=int, help='获取的页数')
+    parser.add_argument('-thread', dest='thread', default=4, type=int, help='启动的线程数')
+    args = parser.parse_args()
+    main(args.page, args.thread)
