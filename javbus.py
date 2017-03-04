@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import requests, re, math, random, time
+import requests, re, math, random, time, sys
 from bs4 import BeautifulSoup
 from pymongo import MongoClient
 import threading
@@ -13,6 +13,7 @@ mutex = threading.Lock()
 
 class Javbus(threading.Thread):
     def __init__(self, page_queue):
+        self.type = ''
         self.page_queue = page_queue
         self.avs_queue = queue.Queue()
         self.s = requests.Session()
@@ -25,7 +26,12 @@ class Javbus(threading.Thread):
 
     def run(self):
         while not self.page_queue.empty():
-            url = 'http://www.javbus.com/page/%s' %self.page_queue.get()
+            url = self.page_queue.get()
+            # 判断是获取什么类型
+            if url.find('uncensored') != -1:
+                self.type = 2
+            else:
+                self.type = 1
             self.get_datas(url)
             time.sleep(2)
 
@@ -42,7 +48,7 @@ class Javbus(threading.Thread):
             title = item.find(class_='photo-frame').img['title']
             fh = av.span.date.next
             time = av.span.date.next.next.next.next
-            link = 'https://www.javbus.in/%s' %fh
+            link = 'https://www.javbus.com/%s' %fh
             info = {
                 'title': title,
                 'fh': fh,
@@ -50,9 +56,10 @@ class Javbus(threading.Thread):
                 'link': link
             }
             avs.append(info)
-        # 获取磁链
+        # 获取磁链 
         for item in avs:
             url = item['link']
+            last = url.replace('.', '-')
             html = self.s.get(url, headers=self.header).text
             # 由于磁力链接是ajax方式获取，所以获取数据，构成ajax链接
             gid = re.search(r'var gid = (\d*?);', html).group(1)
@@ -61,7 +68,7 @@ class Javbus(threading.Thread):
             img = re.search(r"var img = '(.*?)';", html).group(1)
             floor = math.floor(random.random() * 1e3 + 1)
             # 请求数据
-            ajax_url = 'https://www.javbus.in/ajax/uncledatoolsbyajax.php?gid=%s&lang=%s&img=%s&uc=%s&floor=%s' %(gid, lang, img, uc, floor)
+            ajax_url = 'https://www.javbus.com/ajax/uncledatoolsbyajax.php?gid=%s&lang=%s&img=%s&uc=%s&floor=%s' %(gid, lang, img, uc, floor)
             ajax_result = self.s.get(ajax_url, headers=self.header)
             soup = BeautifulSoup(ajax_result.text, 'html.parser')
             try:
@@ -77,23 +84,41 @@ class Javbus(threading.Thread):
         mutex.acquire()
         while not self.avs_queue.empty():
             item = self.avs_queue.get()
+            # 判断是获取什么类型
+            if self.type == 1:
+                db.censored.insert({
+                    'title': item['title'],
+                    'fh': item['fh'],
+                    'time': item['time'],
+                    'image': item['img'],
+                    'link': item['link'],
+                    'magnet': item['magnet']
+                })
+            elif self.type == 2:
+                db.uncensored.insert({
+                    'title': item['title'],
+                    'fh': item['fh'],
+                    'time': item['time'],
+                    'image': item['img'],
+                    'link': item['link'],
+                    'magnet': item['magnet']
+                })
             print('[写入数据库]%s' %item['title'])
-            db.avs.insert({
-                'title': item['title'],
-                'fh': item['fh'],
-                'time': item['time'],
-                'image': item['img'],
-                'link': item['link'],
-                'magnet': item['magnet']
-            })
         mutex.release()
 
-def main(max_page, thread_num):
+def main(max_page, thread_num, av_type):
     # 构建页面队列
     page_queue = queue.Queue()
+    # 判断类型
+    if av_type == 1:
+        url = 'http://www.javbus.com/page/page_num'
+    elif av_type == 2:
+        url = 'http://www.javbus.com/uncensored/page/page_num'
+    else:
+        print('类型不正确, 1: 有码 2: 无码')
+        sys.exit(0)
     for page in range(1, max_page):
-        page_queue.put(page)
-    
+        page_queue.put(url.replace('page_num', str(page)))
     threads = []
     # 开启4个线程
     for i in range(thread_num):
@@ -114,5 +139,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('javbus')
     parser.add_argument('-page', dest='page', default=5, type=int, help='获取的页数')
     parser.add_argument('-thread', dest='thread', default=4, type=int, help='启动的线程数')
+    parser.add_argument('-type', dest='type', default=1, type=int, help='1: 有码 2: 无码')
     args = parser.parse_args()
-    main(args.page, args.thread)
+    main(args.page, args.thread, args.type)
