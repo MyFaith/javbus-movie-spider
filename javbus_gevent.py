@@ -18,8 +18,9 @@ class Avs(Document):
     image = StringField()
     link = StringField()
     magnet = StringField()
+    type = StringField()
 
-def fetch(pageQueue):
+def fetch(pageQueue, type):
     avs_queue = queue.Queue()
     s = requests.Session()
     header = {
@@ -70,6 +71,7 @@ def fetch(pageQueue):
             # append
             item['img'] = img
             item['magnet'] = magnet
+            item['type'] = type
             print('[取到数据]\n标题：%s\n番号：%s\n时间：%s\n图片：%s\n链接：%s\n磁链：%s\n' %(item['title'], item['fh'], item['time'], item['img'], item['link'], item['magnet']))
             avs_queue.put(item)
         # Sve Data
@@ -82,18 +84,21 @@ def fetch(pageQueue):
                 time=item['time'],
                 image=item['img'],
                 link=item['link'],
-                magnet=item['magnet']
+                magnet=item['magnet'],
+                type=str(item['type'])
             )
             av.save()
             print('[写入数据库]%s' %item['title'])
 
-def main(maxPage=10):
+def main(minPage=1, maxPage=10, type=1):
     pageQueue = queue.Queue()
-    url = 'http://www.javbus.com/page/{pageNum}'
-    # url = 'http://www.javbus.com/uncensored/page/{pageNum}'
-    for page in range(1, maxPage):
+    if type == 1:
+        url = 'http://www.javbus.com/page/{pageNum}'
+    else:
+        url = 'http://www.javbus.com/uncensored/page/{pageNum}'
+    for page in range(minPage, maxPage):
         pageQueue.put(url.format(pageNum=str(page)))
-    gevent.joinall([gevent.spawn(fetch, pageQueue) for i in range(10)])
+    gevent.joinall([gevent.spawn(fetch, pageQueue, type) for i in range(maxPage)])
 
 if __name__ == '__main__':
-    main()
+    main(1, 50, 0)

@@ -17,7 +17,7 @@ class Javbus(threading.Thread):
         self.page_queue = page_queue
         self.avs_queue = queue.Queue()
         self.s = requests.Session()
-        self.header = {
+        self.header = 
             'Referer': 'http://www.javbus.com',
             'Cookie': 'existmag=all',
             'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
@@ -49,7 +49,7 @@ class Javbus(threading.Thread):
             fh = av.span.date.next
             time = av.span.date.next.next.next.next
             link = 'https://www.javbus.com/%s' %fh
-            info = {
+            info = 
                 'title': title,
                 'fh': fh,
                 'time': time,
@@ -86,7 +86,7 @@ class Javbus(threading.Thread):
             item = self.avs_queue.get()
             # 判断是获取什么类型
             if self.type == 1:
-                db.censored.insert({
+                db.censored.insert(
                     'title': item['title'],
                     'fh': item['fh'],
                     'time': item['time'],
@@ -95,7 +95,7 @@ class Javbus(threading.Thread):
                     'magnet': item['magnet']
                 })
             elif self.type == 2:
-                db.uncensored.insert({
+                db.uncensored.insert(
                     'title': item['title'],
                     'fh': item['fh'],
                     'time': item['time'],
